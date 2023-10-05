@@ -38,26 +38,29 @@ let users = [
 
 
 app.post('/api/login', (req, res) => {
-    const { username, password } =  req.body;
-
+    const {username, password } = req.body;
+    let token;
     for(let user of users){
         if(username == user.username && password == user.password){
-            let token = jwt.sign({ id: user.id, username: user.username}, secretKey, {expiresIn:'3m'});
-            res.json({
-                success: true,
-                err:null,
-                token
-            });
+            token = jwt.sign({id: user.id,username:user.username}, secretKey,{expiresIn: '7d'});
             break;
         }
     }
-    res.status(401).json({
+    if(token)
+    {
+      res.json({
+        success: true,
+        err: null,
+        token
+      });
+    }else
+    {
+     res.status(401).json({
         success: false,
-        token:null,
-        err:'Username or password is incorrect'
-    });
-        
-    
+        token: null,
+        err: 'Username or password is incorrect'
+     });
+    }
 });
 
 app.get('/api/dashboard', jwtMW, (req,res) => {
