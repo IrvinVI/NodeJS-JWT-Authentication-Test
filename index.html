@@ -28,6 +28,34 @@
         </main>
     </div>
 <script>
+
+    function logout(){
+        alert("Token is no longer valid");
+        localStorage.removeItem("jwt");
+        localStorage.removeItem("expDate");
+        location.replace('/');
+    }
+
+    function autoLogout(){
+        const expDate = localStorage.getItem('expDate');
+        if(!expDate){
+            console.log("No token. Please log in");
+        }
+        else{
+            if (Date.now() >= expDate * 1000) {
+                alert("Token is expired");
+                localStorage.removeItem("jwt");
+                localStorage.removeItem("expDate");
+                location.replace('/');
+                return false;
+            }
+            else{
+                currTime = Date.now();
+                leftTime = (expDate*1000) - currTime;
+                setTimeout(this.logout,leftTime);
+            }
+        }
+    }
     
     function login() {
         const data = {
@@ -42,13 +70,19 @@
             document.getElementById('password').value = '';
             if(res && res.data && res.data.success){
                 const token = res.data.token;
+                const expDate = res.data.expDate;
                 localStorage.setItem('jwt', token);
+                localStorage.setItem('expDate', expDate);
+                // setTimeout(autoLogout(),60000);
                 getDashboard();
             }
         });
     }
     function getDashboard(){
         const token = localStorage.getItem('jwt');
+        const expDate = localStorage.getItem('expDate');
+        autoLogout();
+        //setTimeout(autoLogout(),60000);
         axios.get('/api/dashboard', {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -58,22 +92,23 @@
                 history.pushState(null, null, "dashboard");
                 document.querySelector('h1.row').innerHTML = 'Dashboard';
                 document.querySelector('main').innerHTML = res.data.myContent;
-
             }
         });
     }
     function getSettings(){
         const token = localStorage.getItem('jwt');
+        const expDate = localStorage.getItem('expDate');
+        autoLogout();
         axios.get('/api/settings', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         }).then(res => {
             if (res && res.data && res.data.success){
+                
                 history.pushState(null, null, "settings");
                 document.querySelector('h1.row').innerHTML = 'Settings';
                 document.querySelector('main').innerHTML = res.data.myContent;
-
             }
         });
     }

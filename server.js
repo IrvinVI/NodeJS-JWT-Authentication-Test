@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { expressjwt: exjwt } = require('express-jwt');
 const bodyParser = require('body-parser');
 const path = require('path');
+const jwt_decode = require('jwt-decode');
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.setHeader('Access-Control-Allow-Headers', 'Content-type,Authorization');
@@ -18,7 +19,11 @@ const PORT = 3000;
 const secretKey = 'My super secret key';
 const jwtMW = exjwt({
     secret: secretKey,
-    algorithms: ['HS256']
+    algorithms: ['HS256'],
+    onExpired: async (req, err) => {
+        if (new Date() - err.inner.expiredAt < 0) { location.reload();}
+        throw err;
+      }
 });
 
 let users = [
@@ -34,15 +39,12 @@ let users = [
     }
 ];
 
-
-
-
 app.post('/api/login', (req, res) => {
     const {username, password } = req.body;
     let token;
     for(let user of users){
         if(username == user.username && password == user.password){
-            token = jwt.sign({id: user.id,username:user.username}, secretKey,{expiresIn: '7d'});
+            token = jwt.sign({id: user.id,username:user.username}, secretKey,{expiresIn: '1m'});
             break;
         }
     }
@@ -51,7 +53,8 @@ app.post('/api/login', (req, res) => {
       res.json({
         success: true,
         err: null,
-        token
+        token,
+        expDate: jwt_decode(token).exp
       });
     }else
     {
@@ -76,8 +79,6 @@ app.get('/api/settings', jwtMW, (req,res) => {
         myContent: 'Settings: Privacy = Off, Account = public'
     });
 });
-
-
 
 app.get('/',(req, res)=>{
     res.sendFile(path.join(__dirname, 'index.html'));
